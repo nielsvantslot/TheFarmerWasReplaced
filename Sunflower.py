@@ -1,18 +1,27 @@
-
 import Fertilizer
-import Water
 import Ground
+import Water
 
-def do_plant():
-	Ground.set_soil()
-	plant(Entities.Sunflower)
+def Crop():
+	obj = {}
 
-def do_harvest():
-	if can_harvest():
-		harvest()
+	def get_name():
+		return "Sunflower"
 
-def run(plot=None):
-	Water.use()
-	Fertilizer.use()
-	do_harvest()
-	do_plant()
+	def prepare(drone, plot=None):
+		Ground.set_soil()
+		Fertilizer.use()
+		Water.use()
+
+	def should_harvest(drone, plot=None):
+		return can_harvest()
+
+	def plant_entity(drone, plot=None):
+		return Entities.Sunflower
+
+	obj["get_name"] = get_name
+	obj["prepare"] = prepare
+	obj["should_harvest"] = should_harvest
+	obj["plant_entity"] = plant_entity
+
+	return obj

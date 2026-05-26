@@ -1,6 +1,21 @@
-def do_plant():
-	plant(Entities.Tree)
+def Crop():
+	obj = {}
 
-def do_harvest():
-	if get_entity_type() == Entities.Tree and can_harvest():
-		harvest()
+	def get_name():
+		return "Tree"
+
+	def prepare(drone, plot=None):
+		return
+
+	def should_harvest(drone, plot=None):
+		return can_harvest()
+
+	def plant_entity(drone, plot=None):
+		return Entities.Tree
+
+	obj["get_name"] = get_name
+	obj["prepare"] = prepare
+	obj["should_harvest"] = should_harvest
+	obj["plant_entity"] = plant_entity
+
+	return obj

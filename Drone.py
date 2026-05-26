@@ -115,6 +115,26 @@ def drone():
 
 		change_hat(hat)
 
+	def harvest_raw():
+		harvest()
+
+	def harvest_crop(crop, plot=None):
+		if crop["should_harvest"](obj, plot):
+			harvest()
+
+	def plant_crop(crop, plot=None):
+		entity = crop["plant_entity"](obj, plot)
+
+		if entity == None:
+			return
+
+		plant(entity)
+
+	def run_crop(crop, plot=None):
+		crop["prepare"](obj, plot)
+		harvest_crop(crop, plot)
+		plant_crop(crop, plot)
+
 
 	# =========================
 	# Expose methods
@@ -128,6 +148,10 @@ def drone():
 	obj["get_x"] = get_x
 	obj["get_y"] = get_y
 	obj["set_hat"] = set_hat
+	obj["harvest_raw"] = harvest_raw
+	obj["harvest_crop"] = harvest_crop
+	obj["plant_crop"] = plant_crop
+	obj["run_crop"] = run_crop
 
 	# optional state exposure
 	obj["state"] = self

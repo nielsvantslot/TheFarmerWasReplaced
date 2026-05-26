@@ -1,11 +1,19 @@
+import DefaultPlotStrategy
+
+default_plot_strategy = DefaultPlotStrategy.Strategy()
+
 def PlotSpec(crop, strategy, hat):
+	resolved_strategy = strategy
+	if resolved_strategy == None:
+		resolved_strategy = default_plot_strategy
+
 	obj = {}
 
 	def get_crop():
 		return crop
 
 	def get_strategy():
-		return strategy
+		return resolved_strategy
 
 	def get_hat():
 		return hat
