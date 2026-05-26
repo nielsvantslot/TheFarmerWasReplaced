@@ -7,10 +7,6 @@ def Strategy():
 	obj = {}
 
 	def before_plot(drone, plot):
-		if not has_any_sunflower(drone, plot):
-			self["harvest_order"] = []
-			return
-
 		candidates = scan_harvestable_sunflowers(drone, plot)
 		self["harvest_order"] = build_harvest_order(drone, candidates)
 
@@ -25,68 +21,19 @@ def Strategy():
 	def tile_distance(x1, y1, x2, y2, size):
 		return wrap_distance(x1, x2, size) + wrap_distance(y1, y2, size)
 
-	def merge_lists(left, right, compare):
-		merged = []
-		i = 0
-		j = 0
-
-		while i < len(left) and j < len(right):
-			if compare(left[i], right[j]):
-				merged.append(left[i])
-				i = i + 1
-			else:
-				merged.append(right[j])
-				j = j + 1
-
-		while i < len(left):
-			merged.append(left[i])
+	def insertion_sort_by_distance(group, from_x, from_y, world_size):
+		i = 1
+		while i < len(group):
+			key = group[i]
+			key_dist = tile_distance(from_x, from_y, key["x"], key["y"], world_size)
+			j = i - 1
+			while j >= 0 and tile_distance(from_x, from_y, group[j]["x"], group[j]["y"], world_size) > key_dist:
+				group[j + 1] = group[j]
+				j = j - 1
+			group[j + 1] = key
 			i = i + 1
+		return group
 
-		while j < len(right):
-			merged.append(right[j])
-			j = j + 1
-
-		return merged
-
-	def merge_sort(items, compare):
-		if len(items) <= 1:
-			return items
-
-		middle = len(items) // 2
-		left = []
-		right = []
-		i = 0
-
-		while i < middle:
-			left.append(items[i])
-			i = i + 1
-
-		while i < len(items):
-			right.append(items[i])
-			i = i + 1
-
-		left = merge_sort(left, compare)
-		right = merge_sort(right, compare)
-
-		return merge_lists(left, right, compare)
-
-	def has_any_sunflower(drone, plot):
-		x1 = plot["get_x1"]()
-		x2 = plot["get_x2"]()
-		y1 = plot["get_y1"]()
-		y2 = plot["get_y2"]()
-
-		x = x1
-		while x <= x2:
-			y = y1
-			while y <= y2:
-				drone["move_to"](x, y)
-				if get_entity_type() == Entities.Sunflower:
-					return True
-				y = y + 1
-			x = x + 1
-
-		return False
 
 	def scan_harvestable_sunflowers(drone, plot):
 		candidates = []
@@ -117,77 +64,51 @@ def Strategy():
 
 		return candidates
 
-	def sort_by_size_desc(candidates):
-		# Grouping by size keeps a strict largest-to-smallest harvest contract.
-		def normalize_size(value):
-			if value == None:
-				return -1
-
-			return value
-
-		def compare_size(left, right):
-			left_size = normalize_size(left["size"])
-			right_size = normalize_size(right["size"])
-
-			if left_size > right_size:
-				return True
-			if left_size < right_size:
-				return False
-
-			if left["x"] < right["x"]:
-				return True
-			if left["x"] > right["x"]:
-				return False
-
-			return left["y"] <= right["y"]
-
-		return merge_sort(candidates, compare_size)
-
-	def sort_group_by_distance(group, from_x, from_y, world_size):
-		def compare_distance(left, right):
-			left_distance = tile_distance(from_x, from_y, left["x"], left["y"], world_size)
-			right_distance = tile_distance(from_x, from_y, right["x"], right["y"], world_size)
-
-			if left_distance < right_distance:
-				return True
-			if left_distance > right_distance:
-				return False
-
-			if left["x"] < right["x"]:
-				return True
-			if left["x"] > right["x"]:
-				return False
-
-			return left["y"] <= right["y"]
-
-		return merge_sort(group, compare_distance)
-
 	def build_harvest_order(drone, candidates):
 		ordered = []
 		world_size = World.size()
 		cx = drone["get_x"]()
 		cy = drone["get_y"]()
-		sorted_candidates = sort_by_size_desc(candidates)
+
+		if len(candidates) == 0:
+			return ordered
+
+		max_size = candidates[0]["size"]
+		min_size = candidates[0]["size"]
 		i = 0
+		while i < len(candidates):
+			s = candidates[i]["size"]
+			if s > max_size:
+				max_size = s
+			if s < min_size:
+				min_size = s
+			i = i + 1
 
-		while i < len(sorted_candidates):
-			size_value = sorted_candidates[i]["size"]
-			group = []
+		bucket_count = max_size - min_size + 1
+		buckets = []
+		i = 0
+		while i < bucket_count:
+			buckets.append([])
+			i = i + 1
 
-			while i < len(sorted_candidates) and sorted_candidates[i]["size"] == size_value:
-				group.append(sorted_candidates[i])
-				i = i + 1
+		i = 0
+		while i < len(candidates):
+			c = candidates[i]
+			buckets[c["size"] - min_size].append(c)
+			i = i + 1
 
-			group = sort_group_by_distance(group, cx, cy, world_size)
-
+		size = max_size
+		while size >= min_size:
+			group = buckets[size - min_size]
+			group = insertion_sort_by_distance(group, cx, cy, world_size)
 			j = 0
 			while j < len(group):
 				ordered.append(group[j])
 				j = j + 1
-
 			if len(group) > 0:
 				cx = group[len(group) - 1]["x"]
 				cy = group[len(group) - 1]["y"]
+			size = size - 1
 
 		return ordered
 
